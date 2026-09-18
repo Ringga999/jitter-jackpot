@@ -1,39 +1,21 @@
-# Coinflip — example casino game
+# Jitter Jackpot — web client
 
-Reference guest UI for `CoinflipGame.sol`, showing how to build a Chain.wtf casino
-game: the host loads it inside an iframe and drives it entirely over the
-`@chain/casino-sdk` bridge — no wallet code in the game. The UI mirrors the
-production coinflip: the chain.wtf design tokens and card recipes live in
-`src/styles/` (plain CSS, no framework), the sidebar carries the bet controls and
-the gradient BET CTA, and the canvas renders the backdrop art, the CSS-3D coin
-grid, the recent-results rail, the profit/win-chance stats strip and the WIN
-celebration overlay.
+Casino-noir 3-reel slot (ICasinoGameV2) gated by an on-device human-proof hold:
+the player holds the circle while pointer micro-jitter is sampled; perfectly
+still holds are rejected. Bots do not tremble — humans do.
 
-## Run
+## Run locally (with the Chain casino SDK simulator)
+1. `npm install`
+2. Link the local SDK bridge: `npm install "<path-to-casino-sdk-root>"`
+3. Dev server: `npx vite --port 3200`
+4. At the SDK root run `npm start`; in the harness set Game URL to
+   `http://localhost:3200` and pick the JitterJackpot contract.
 
-```sh
-vp dev        # serves http://localhost:3100 (joins the root `bun dev` orchestrator too)
-vp build      # static bundle in dist/
-```
+## Build & host
+`npm run build` → static `dist/` (iframe-friendly; jam widget tag in index.html).
 
-Point the game's `url` in the Convex `game_details` data at the served origin
-(dev: `http://localhost:3100/`). The host fetches `game.manifest.json` from that
-origin (served from `public/`, CORS open) and embeds the page.
+## Modes
+- Inside a host iframe: real on-chain sessions via the SDK guest bridge.
+- Opened directly: DEMO MODE (local randomness, same paytable), clearly labelled.
 
-## How a round works
-
-1. Player picks heads/tails, coin count (1–10) and required hits; the bet is
-   ABI-encoded as `(bool pickHeads, uint8 coinCount, uint8 minWins)` and sent via
-   `hostApi.openSession` (instant game — no `submitAction`).
-2. The coins tumble while the snapshot pushes catch up; once the session row for
-   our `sessionKey` turns terminal, the settled `gameState` is decoded and each
-   coin toss-lands on randomness bit `i` (`1` = heads), exactly like
-   `_countHeads` on-chain.
-3. After the landing animation, `hostApi.revealOutcome` releases the withheld
-   payout into the host's balance displays, the result badges + WIN overlay show,
-   and the round lands in the history rail. The Fast Mode toggle skips the
-   animation and reveals the instant the outcome is known.
-
-`src/lib/coinflip.ts` mirrors the contract's combinatorics (win ways, 98% RTP payout
-floor math) for the multiplier/probability preview and the client-side risk-limit
-check against `casino.maxAllowedReservedProfit` — the chain stays authoritative.
+Math: ../MATH.md (RTP 95.77%, frozen v1.0). Contract: ../JitterJackpot.sol.
