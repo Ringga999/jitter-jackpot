@@ -1,0 +1,36 @@
+/* Jitter Jackpot — casino noir tokens */
+:root {
+  --jj-bg: #0b0e13;
+  --jj-panel: #12161d;
+  --jj-gold: #d4af37;
+  --jj-violet: #7c3aed;
+  --jj-cream: #e8e2d0;
+  --jj-red: #e05252;
+}
+
+.jj-shell { min-height: 100vh; background: var(--jj-bg); color: var(--jj-cream); font-family: ui-sans-serif, system-ui, sans-serif; display: flex; flex-direction: column; }
+.jj-top { display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid #1d2330; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--jj-gold); }
+.jj-main { flex: 1; display: flex; align-items: center; justify-content: center; gap: 32px; padding: 24px; flex-wrap: wrap; }
+
+.jj-gate { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.jj-gate__circle { position: relative; width: 180px; height: 180px; border-radius: 50%; background: conic-gradient(var(--jj-violet) calc(var(--jj-progress) * 360deg), #1d2330 0); display: flex; align-items: center; justify-content: center; cursor: pointer; touch-action: none; user-select: none; }
+.jj-gate__circle::before { content: ''; position: absolute; width: 150px; height: 150px; border-radius: 50%; background: var(--jj-panel); }
+.jj-gate__mark { position: relative; font-weight: 800; font-size: 40px; color: var(--jj-violet); }
+.jj-gate__circle--holding .jj-gate__mark { color: var(--jj-gold); }
+.jj-gate__msg { max-width: 320px; text-align: center; color: #9aa3b2; font-size: 13px; }
+
+.jj-reels { display: flex; gap: 12px; padding: 18px; background: var(--jj-panel); border: 1px solid #232a38; border-radius: 14px; }
+.jj-reel { width: 96px; height: 112px; border-radius: 10px; background: #0e1218; border: 1px solid #232a38; display: flex; align-items: center; justify-content: center; font-size: 52px; }
+.jj-reel--spinning .jj-reel__face { animation: jj-spin .18s linear infinite; filter: blur(1px); }
+.jj-reel--win { border-color: var(--jj-gold); box-shadow: 0 0 18px rgba(212, 175, 55, .45); }
+@keyframes jj-spin { 0% { transform: translateY(-8px); } 50% { transform: translateY(6px); } 100% { transform: translateY(-8px); } }
+
+.jj-panel { width: 280px; background: var(--jj-panel); border: 1px solid #232a38; border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+.jj-panel label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #9aa3b2; }
+.jj-panel input { background: #0e1218; border: 1px solid #232a38; color: var(--jj-cream); border-radius: 8px; padding: 10px 12px; font-size: 16px; }
+.jj-btn { border: none; border-radius: 10px; padding: 14px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; cursor: pointer; }
+.jj-btn--spin { background: linear-gradient(135deg, var(--jj-gold), #b8962e); color: #14100a; }
+.jj-btn--spin:disabled { opacity: .4; cursor: not-allowed; }
+.jj-result { text-align: center; font-size: 14px; min-height: 20px; color: var(--jj-gold); }
+.jj-result--lose { color: var(--jj-red); }
+.jj-demo { background: #3a2f0b; color: var(--jj-gold); text-align: center; padding: 6px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; }

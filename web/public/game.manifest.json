@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "gameId": "JitterJackpot",
+  "apiVersion": 1,
+  "defaultLocale": "en",
+  "locales": {
+    "en": {
+"name": "Jitter Jackpot"
+"description": "The first casino game bots cannot play. Casino-noir slot gated by on-device human proof; reels turn with your hand's micro-jitter. RTP 95.77%."
+    }
+  },
+  "presentation": {
+    "mode": "full-iframe",
+    "hostPanels": {
+      "openSession": false,
+      "history": false,
+      "status": false
+    }
+  },
+  "capabilities": {
+    "openSession": true,
+    "submitAction": false,
+    "forfeitExpiredSession": false,
+    "cancelStuckRandomness": false,
+    "resize": true
+  }
+}
