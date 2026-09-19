@@ -3,9 +3,14 @@ import { formatUnits, parseUnits } from 'viem';
 
 import { useCasinoHost } from './lib/useCasinoHost';
 import { useDemoHost } from './lib/demoHost';
-import { GAME_DATA_EMPTY, SYMBOLS, outcomeFromRandomness } from './lib/jitter';
+import { GAME_DATA_EMPTY, outcomeFromRandomness } from './lib/jitter';
+import { SymbolFace } from './components/SymbolFace';
+import { WinBurst } from './components/WinBurst';
 import { GateCircle, type GateTrace } from './components/GateCircle';
 import './styles/jitter.css';
+
+const STRIP: number[] = [0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 0, 1];
+const PROOF_SESSION_SPINS = 10;
 
 type Round = {
   sessionKey: string;
@@ -39,6 +44,10 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [spinning, setSpinning] = useState(false);
   const [faces, setFaces] = useState<[number, number, number]>([5, 4, 3]);
+  const [stopped, setStopped] = useState<[boolean, boolean, boolean]>([true, true, true]);
+  const [burstHidden, setBurstHidden] = useState(false);
+  const [proofBudget, setProofBudget] = useState(0);
+  const [history, setHistory] = useState<{ syms: [number, number, number]; mult: number }[]>([]);
 
   const decimals = snapshot?.token.decimals ?? 18;
   const symbol = snapshot?.token.symbol ?? '';
@@ -74,8 +83,14 @@ export function App() {
           n[i] = syms[i];
           return n;
         });
+        setStopped(s => {
+          const n = [...s] as [boolean, boolean, boolean];
+          n[i] = true;
+          return n;
+        });
       }, d),
     );
+    setHistory(h => [{ syms, mult: outcome.mult }, ...h].slice(0, 8));
     setTimeout(() => {
       setSpinning(false);
       setRound(cur => (cur && cur.sessionKey === round.sessionKey ? { ...cur, status: 'done' } : cur));
@@ -89,6 +104,10 @@ export function App() {
       setError(null);
       const pendingKey = `pending:${Date.now()}`;
       setRound({ sessionKey: pendingKey, wager, status: 'opening' });
+      setSpinning(true);
+      setStopped([false, false, false]);
+      setBurstHidden(false);
+      setProofBudget(b => b - 1);
       setSpinning(true);
       try {
         const { sessionKey } = await hostApi.openSession({ wager: wager.toString(), gameData: GAME_DATA_EMPTY });
@@ -134,7 +153,7 @@ export function App() {
   const handleMain = () => {
     if (roundDone) {
       setRound(null);
-      setTrace(null); // every spin earns its gate
+      if (proofBudget <= 0) setTrace(null); // proof session exhausted → re-gate
       return;
     }
     if (wager !== null) void openRound(wager);
@@ -160,6 +179,11 @@ export function App() {
 
   return (
     <div className="jj-shell">
+      <div className="jj-marquee" aria-hidden>
+        {Array.from({ length: 24 }, (_, k) => (
+          <i key={k} />
+        ))}
+      </div>
       {demoOn && <div className="jj-demo">DEMO MODE — local randomness · no chain · play the real thing on chain.wtf</div>}
       <div className="jj-top">
         <span>Jitter Jackpot</span>
@@ -169,17 +193,58 @@ export function App() {
       </div>
       <div className="jj-main">
         {trace === null && !round ? (
-          <GateCircle onPassed={setTrace} />
+          <GateCircle
+            onPassed={t => {
+              setTrace(t);
+              setProofBudget(PROOF_SESSION_SPINS);
+            }}
+          />
         ) : (
           <>
-            <div className="jj-reels">
+            <div className="jj-stage">
+            <div className={`jj-reels${roundDone && (round.mult ?? 0) > 0 ? ' jj-reels--win' : ''}`}>
               {[0, 1, 2].map(i => (
-                <div key={i} className={`jj-reel${spinning ? ' jj-reel--spinning' : ''}${winReels(i) ? ' jj-reel--win' : ''}`}>
-                  <span className="jj-reel__face">{SYMBOLS[faces[i]].glyph}</span>
+                <div key={i} className={`jj-reel${stopped[i] ? '' : ' jj-reel--spinning'}${winReels(i) ? ' jj-reel--win' : ''}`}>
+                  {stopped[i] ? (
+                    <span className="jj-reel__face jj-reel__face--land">
+                      <SymbolFace sym={faces[i]} />
+                    </span>
+                  ) : (
+                    <div className={`jj-reel__strip jj-reel__strip--r${i}`}>
+                      {STRIP.map((s, k) => (
+                        <span key={k} className="jj-reel__cell">
+                          <SymbolFace sym={s} />
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
+              {roundDone && (round.mult ?? 0) > 0 && <div className="jj-winline" aria-hidden />}
+            </div>
+            <div className="jj-history">
+              {history.length === 0 ? (
+                <span className="jj-history__empty">your last eight rounds land here</span>
+              ) : (
+                history.map((h, k) => (
+                  <span key={k} className={`jj-history__chip${h.mult > 0 ? ' jj-history__chip--win' : ''}`}>
+                    {h.syms.map((s, j) => (
+                      <em key={j} className="jj-history__sym">
+                        <SymbolFace sym={s} />
+                      </em>
+                    ))}
+                    <b>{h.mult > 0 ? `${h.mult}x` : '—'}</b>
+                  </span>
+                ))
+              )}
+            </div>
             </div>
             <div className="jj-panel">
+              {trace !== null && (
+                <div className="jj-proof">
+                  human proof active · {proofBudget} spin{proofBudget === 1 ? '' : 's'} left
+                </div>
+              )}
               <label>Wager ({symbol})</label>
               <input value={wagerInput} onChange={e => setWagerInput(e.target.value)} inputMode="decimal" />
               <button className="jj-btn jj-btn--spin" disabled={!canSpin} onClick={handleMain}>
@@ -194,6 +259,13 @@ export function App() {
           </>
         )}
       </div>
+      {roundDone && (round.mult ?? 0) > 0 && !burstHidden && (
+        <WinBurst
+          mult={round.mult ?? 0}
+          netText={`+${Number(formatUnits((round.payout ?? 0n) - round.wager, decimals)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${symbol}`}
+          onDismiss={() => setBurstHidden(true)}
+        />
+      )}
     </div>
   );
 }
